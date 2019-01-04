@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+const String COLLECTION = 'sample-1';
+
 void main() => runApp(MaterialApp(
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
@@ -42,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _create() {
     Firestore.instance
-        .collection('Tasks')
+        .collection(COLLECTION)
         .document(_name)
         .setData({'name': _name, 'description': _description, 'price': _price});
     print('create');
@@ -50,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _update() {
     Firestore.instance
-        .collection('Tasks')
+        .collection(COLLECTION)
         .document(_name)
         .setData({'name': _name, 'description': _description, 'price': _price});
     print('update');
@@ -58,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _delete() {
     DocumentReference df =
-        Firestore.instance.collection('Tasks').document(_name);
+        Firestore.instance.collection(COLLECTION).document(_name);
     df.delete().whenComplete(() {
       print('reference with name $_name was deleted');
     });
@@ -66,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _read() {
     DocumentReference df =
-        Firestore.instance.collection('Tasks').document(_name);
+        Firestore.instance.collection(COLLECTION).document(_name);
     df.get().then((datasnapsht) {
       print(datasnapsht.data['name']);
       print(datasnapsht.data['description']);
@@ -78,9 +80,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Firebase CRUD')),
-      body: Column(
-        children: <Widget>[
+        appBar: AppBar(title: Text('Firebase CRUD')),
+        body: Column(children: <Widget>[
           TextField(
             decoration: InputDecoration(hintText: "Name"),
             onChanged: _updateName,
@@ -121,24 +122,23 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      Expanded(child: Text('Name')),
-                      Expanded(child: Text('Description')),
-                      Expanded(child: Text('Price')),
-                    ],
+            child: StreamBuilder(
+              stream: Firestore.instance.collection(COLLECTION).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return Column(children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5, bottom: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        Expanded(child: Text('Name')),
+                        Expanded(child: Text('Description')),
+                        Expanded(child: Text('Price')),
+                      ],
+                    ),
                   ),
-                ),
-                
-                StreamBuilder(
-                  stream: Firestore.instance.collection("Tasks").snapshots(),
-                  builder: (context, snapshot) {
-                    return ListView.builder(
+                  ListView.builder(
                       shrinkWrap: true,
                       itemCount: snapshot.data.documents.length,
                       itemBuilder: (context, index) {
@@ -151,15 +151,17 @@ class _MyHomePageState extends State<MyHomePage> {
                             Expanded(child: Text(ds['price'].toString())),
                           ],
                         );
-                      },
-                    );
-                  },
-                ),
-              ],
+                      }),
+                ]);
+                } else {
+                  return Align(
+                    alignment: FractionalOffset.bottomCenter,
+                    child: CircularProgressIndicator(),
+                  );
+                }
+              },
             ),
-          )
-        ],
-      ),
-    );
+          ),
+        ]));
   }
 }
